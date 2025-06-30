@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_project_project_progress_user,project.project.progress.user,project.model_project_project,project.group_project_user,1,0,0,0
+access_project_project_progress_manager,project.project.progress.manager,project.model_project_project,project.group_project_manager,1,1,1,0
+access_project_task_progress_user,project.task.progress.user,project.model_project_task,project.group_project_user,1,0,0,0
+access_project_task_progress_manager,project.task.progress.manager,project.model_project_task,project.group_project_manager,1,1,1,0
