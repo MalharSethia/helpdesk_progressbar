@@ -18,7 +18,7 @@
                     <!-- Task Progress Bar -->
                     <div class="o_project_progress_bar_container" 
                          t-if="record.total_tasks and record.total_tasks.raw_value and record.total_tasks.raw_value > 0">
-                        <div class="o_project_progress_bar">
+                        <div class="o_project_progress_bar_large">
                             <t t-set="progress_data" t-value="record.task_progress_data and record.task_progress_data.raw_value ? JSON.parse(record.task_progress_data.raw_value) : {'segments': [], 'total': 0}"/>
                             <t t-if="progress_data and progress_data.segments and progress_data.segments.length" 
                                t-foreach="progress_data.segments" t-as="segment">
