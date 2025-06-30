@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
+        <!-- Inherit project kanban view to add progress bar -->
         <record id="view_project_kanban_inherit_progress_bar" model="ir.ui.view">
             <field name="name">project.project.kanban.progress.bar</field>
             <field name="model">project.project</field>
             <field name="inherit_id" ref="project.view_project_kanban"/>
             <field name="arch" type="xml">
+                <!-- Add the computed fields to the kanban view -->
                 <field name="partner_id" position="after">
                     <field name="total_tasks"/>
                     <field name="task_progress_data"/>
                 </field>
                 
+                <!-- Add the progress bar before the project boxes -->
                 <xpath expr="//div[hasclass('o_project_kanban_boxes')]" position="before">
-                    <div class="o_project_progress_bar_container" t-if="record.total_tasks and record.total_tasks.raw_value > 0">
+                    <!-- Task Progress Bar -->
+                    <div class="o_project_progress_bar_container" 
+                         t-if="record.total_tasks and record.total_tasks.raw_value and record.total_tasks.raw_value > 0">
                         <div class="o_project_progress_bar">
-                            <t t-set="progress_data" t-value="record.task_progress_data.raw_value ? JSON.parse(record.task_progress_data.raw_value) : {}"/>
-                            <t t-if="progress_data.segments" t-foreach="progress_data.segments" t-as="segment">
+                            <t t-set="progress_data" t-value="record.task_progress_data and record.task_progress_data.raw_value ? JSON.parse(record.task_progress_data.raw_value) : {'segments': [], 'total': 0}"/>
+                            <t t-if="progress_data and progress_data.segments and progress_data.segments.length" 
+                               t-foreach="progress_data.segments" t-as="segment">
                                 <div class="o_progress_segment" 
                                      t-att-style="'width: ' + segment.percentage + '%; background-color: ' + segment.color + ';'"
                                      t-att-title="segment.name + ': ' + segment.count + ' tasks (' + segment.percentage + '%)'">
