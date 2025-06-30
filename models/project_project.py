@@ -20,85 +20,98 @@ class ProjectProject(models.Model):
     @api.depends('task_ids.stage_id', 'task_ids.active')
     def _compute_task_progress_data(self):
         for project in self:
-            # Get all active tasks for this project
-            tasks = project.task_ids.filtered(lambda t: t.active)
-            total_tasks = len(tasks)
-            
-            project.total_tasks = total_tasks
-            
-            if total_tasks == 0:
+            try:
+                tasks = project.task_ids.filtered(lambda t: t.active)
+                total_tasks = len(tasks)
+                project.total_tasks = total_tasks
+                
+                if total_tasks == 0:
+                    project.task_progress_data = json.dumps({
+                        'segments': [],
+                        'total': 0
+                    })
+                    continue
+                
+                stage_counts = {}
+                stage_info = {}
+                
+                for task in tasks:
+                    stage = task.stage_id
+                    if stage:
+                        stage_id = stage.id
+                        if stage_id not in stage_counts:
+                            stage_counts[stage_id] = 0
+                            stage_info[stage_id] = {
+                                'name': stage.name,
+                                'color': self._get_stage_color(stage),
+                                'fold': stage.fold,
+                                'sequence': stage.sequence or 0
+                            }
+                        stage_counts[stage_id] += 1
+                    else:
+                        if 'no_stage' not in stage_counts:
+                            stage_counts['no_stage'] = 0
+                            stage_info['no_stage'] = {
+                                'name': 'No Stage',
+                                'color': '#95a5a6',
+                                'fold': False,
+                                'sequence': 999
+                            }
+                        stage_counts['no_stage'] += 1
+                
+                segments = []
+                for stage_id, count in stage_counts.items():
+                    percentage = (count / total_tasks) * 100
+                    info = stage_info[stage_id]
+                    segments.append({
+                        'stage_id': stage_id,
+                        'name': info['name'],
+                        'count': count,
+                        'percentage': round(percentage, 1),
+                        'color': info['color'],
+                        'fold': info['fold'],
+                        'sequence': info['sequence']
+                    })
+                
+                segments.sort(key=lambda x: (x['sequence'], x['fold'], x['name']))
+                
+                project.task_progress_data = json.dumps({
+                    'segments': segments,
+                    'total': total_tasks
+                })
+                
+            except Exception as e:
+                project.total_tasks = 0
                 project.task_progress_data = json.dumps({
                     'segments': [],
                     'total': 0
                 })
-                continue
-            
-            # Group tasks by stage
-            stage_counts = {}
-            stage_info = {}
-            
-            for task in tasks:
-                stage = task.stage_id
-                if stage:
-                    stage_id = stage.id
-                    if stage_id not in stage_counts:
-                        stage_counts[stage_id] = 0
-                        stage_info[stage_id] = {
-                            'name': stage.name,
-                            'color': self._get_stage_color(stage),
-                            'fold': stage.fold
-                        }
-                    stage_counts[stage_id] += 1
-                else:
-                    # Handle tasks without stage
-                    if 'no_stage' not in stage_counts:
-                        stage_counts['no_stage'] = 0
-                        stage_info['no_stage'] = {
-                            'name': 'No Stage',
-                            'color': '#95a5a6',  # Default gray color
-                            'fold': False
-                        }
-                    stage_counts['no_stage'] += 1
-            
-            # Calculate percentages and create segments
-            segments = []
-            for stage_id, count in stage_counts.items():
-                percentage = (count / total_tasks) * 100
-                segments.append({
-                    'stage_id': stage_id,
-                    'name': stage_info[stage_id]['name'],
-                    'count': count,
-                    'percentage': round(percentage, 1),
-                    'color': stage_info[stage_id]['color'],
-                    'fold': stage_info[stage_id]['fold']
-                })
-            
-            # Sort segments by stage sequence or put folded stages at the end
-            segments.sort(key=lambda x: (x['fold'], x['name']))
-            
-            project.task_progress_data = json.dumps({
-                'segments': segments,
-                'total': total_tasks
-            })
     
     def _get_stage_color(self, stage):
-        """Get color for stage based on its properties"""
-        # Map stage properties to colors (similar to Odoo's default task colors)
+        if hasattr(stage, 'color') and stage.color:
+            color_map = {
+                0: '#FFFFFF', 1: '#FF0000', 2: '#FF8000', 3: '#FFFF00',
+                4: '#80FF00', 5: '#00FF00', 6: '#00FF80', 7: '#00FFFF',
+                8: '#0080FF', 9: '#0000FF', 10: '#8000FF', 11: '#FF00FF'
+            }
+            return color_map.get(stage.color, '#95a5a6')
+        
+        stage_name_lower = stage.name.lower()
+        
         if stage.fold:
-            # Folded stages (usually done/cancelled) - use completion colors
-            if any(keyword in stage.name.lower() for keyword in ['done', 'complete', 'finish', 'close']):
-                return '#2ecc71'  # Green for completed
-            elif any(keyword in stage.name.lower() for keyword in ['cancel', 'reject', 'abort']):
-                return '#e74c3c'  # Red for cancelled
+            if any(keyword in stage_name_lower for keyword in ['done', 'complete', 'finish']):
+                return '#2ecc71'
+            elif any(keyword in stage_name_lower for keyword in ['cancel', 'reject']):
+                return '#e74c3c'
             else:
-                return '#95a5a6'  # Gray for other folded stages
+                return '#95a5a6'
         else:
-            # Active stages - use progression colors
-            stage_sequence = stage.sequence or 0
-            colors = [
-                '#3498db',  # Blue - new/to do
-                '#f39c12',  # Orange - in progress
-                '#9b59b6',  # Purple - review/testing
-                '#1abc9c',  # Teal - ready to deploy
-            ]
-            return colors[min(stage_sequence, len(colors) - 1)]
+            sequence = stage.sequence or 0
+            if sequence <= 1:
+                return '#3498db'
+            elif sequence <= 2:
+                return '#f39c12'
+            elif sequence <= 3:
+                return '#9b59b6'
+            else:
+                return '#1abc9c'
