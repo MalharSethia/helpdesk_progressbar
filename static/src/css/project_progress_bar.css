@@ -16,7 +16,7 @@
     transition: all 0.3s ease;
     cursor: pointer;
     border-right: 1px solid rgba(255,255,255,0.2);
-    min-width: 2px; /* Ensure very small segments are still visible */
+    min-width: 2px;
 }
 
 .o_progress_segment:last-child {
@@ -37,12 +37,10 @@
     font-size: 11px;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .o_project_progress_bar {
         height: 6px;
     }
-    
     .o_project_progress_legend {
         margin-top: 2px;
     }
