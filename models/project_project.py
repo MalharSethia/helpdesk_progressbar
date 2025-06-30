@@ -53,9 +53,11 @@ class ProjectProject(models.Model):
                         stage_id = stage.id
                         if stage_id not in stage_counts:
                             stage_counts[stage_id] = 0
+                            # Get proper color for this specific stage
+                            stage_color = self._get_correct_stage_color(stage.name)
                             stage_info[stage_id] = {
                                 'name': stage.name or 'Unnamed Stage',
-                                'color': self._get_stage_color_by_name(stage.name),
+                                'color': stage_color,
                                 'fold': bool(stage.fold),
                                 'sequence': stage.sequence or 0
                             }
@@ -66,7 +68,7 @@ class ProjectProject(models.Model):
                             stage_counts['no_stage'] = 0
                             stage_info['no_stage'] = {
                                 'name': 'No Stage',
-                                'color': '#95a5a6',  # Default gray color
+                                'color': '#95a5a6',
                                 'fold': False,
                                 'sequence': 999
                             }
@@ -75,11 +77,11 @@ class ProjectProject(models.Model):
                 # Calculate percentages and create segments
                 segments = []
                 for stage_id, count in stage_counts.items():
-                    if count > 0:  # Only add segments with tasks
+                    if count > 0:
                         percentage = (count / total_tasks) * 100
                         info = stage_info[stage_id]
                         segments.append({
-                            'stage_id': str(stage_id),  # Ensure it's a string for JSON
+                            'stage_id': str(stage_id),
                             'name': info['name'],
                             'count': count,
                             'percentage': round(percentage, 1),
@@ -88,8 +90,8 @@ class ProjectProject(models.Model):
                             'sequence': info['sequence']
                         })
                 
-                # Sort segments by sequence, then by folded status
-                segments.sort(key=lambda x: (x['sequence'], x['fold'], x['name']))
+                # Sort segments by sequence
+                segments.sort(key=lambda x: (x['sequence'], x['name']))
                 
                 project.task_progress_data = json.dumps({
                     'segments': segments,
@@ -98,31 +100,41 @@ class ProjectProject(models.Model):
                 
             except Exception as e:
                 _logger.error("Error computing task progress data for project %s: %s", project.id, str(e))
-                # Fallback in case of any error
                 project.total_tasks = 0
                 project.task_progress_data = json.dumps({
                     'segments': [],
                     'total': 0
                 })
     
-    def _get_stage_color_by_name(self, stage_name):
-        """Get color for stage based on its name matching the 5 categories"""
+    def _get_correct_stage_color(self, stage_name):
+        """Get the correct color for the 5 specific stage categories"""
         if not stage_name:
-            return '#95a5a6'  # Default gray
+            return '#95a5a6'
             
-        stage_name_lower = stage_name.lower()
+        stage_name_clean = stage_name.lower().strip()
         
-        # Map the 5 specific stage categories to colors
-        if 'in progress' in stage_name_lower or 'progress' in stage_name_lower:
-            return '#95a5a6'  # Grey - In Progress
-        elif 'changes requested' in stage_name_lower or 'changes' in stage_name_lower or 'requested' in stage_name_lower:
-            return '#f39c12'  # Orange - Changes Requested  
-        elif 'approved' in stage_name_lower or 'approve' in stage_name_lower:
-            return '#2ecc71'  # Green - Approved
-        elif 'cancel' in stage_name_lower or 'cancelled' in stage_name_lower:
-            return '#e74c3c'  # Red - Cancelled
-        elif 'done' in stage_name_lower or 'complete' in stage_name_lower or 'finished' in stage_name_lower:
-            return '#27ae60'  # Dark Green - Done
+        # Exact matches for your 5 categories
+        if stage_name_clean == 'in progress':
+            return '#95a5a6'  # Grey
+        elif stage_name_clean == 'changes requested':
+            return '#f39c12'  # Orange
+        elif stage_name_clean == 'approved':
+            return '#2ecc71'  # Green
+        elif stage_name_clean == 'canceled' or stage_name_clean == 'cancelled':
+            return '#e74c3c'  # Red
+        elif stage_name_clean == 'done':
+            return '#27ae60'  # Dark Green
+        
+        # Partial matches as fallback
+        elif 'progress' in stage_name_clean:
+            return '#95a5a6'  # Grey
+        elif 'change' in stage_name_clean or 'request' in stage_name_clean:
+            return '#f39c12'  # Orange
+        elif 'approv' in stage_name_clean:
+            return '#2ecc71'  # Green
+        elif 'cancel' in stage_name_clean:
+            return '#e74c3c'  # Red
+        elif 'done' in stage_name_clean or 'complete' in stage_name_clean:
+            return '#27ae60'  # Dark Green
         else:
-            # Fallback: use sequence-based colors for other stages
-            return '#9b59b6'  # Purple - Other stages
+            return '#9b59b6'  # Purple for unrecognized stages
