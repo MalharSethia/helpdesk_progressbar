@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Inherit project kanban view to add progress bar -->
+        <record id="view_project_kanban_inherit_progress_bar" model="ir.ui.view">
+            <field name="name">project.project.kanban.progress.bar</field>
+            <field name="model">project.project</field>
+            <field name="inherit_id" ref="project.view_project_kanban"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[hasclass('o_project_kanban_boxes')]" position="before">
+                    <!-- Task Progress Bar -->
+                    <div class="o_project_progress_bar_container" t-if="record.total_tasks.raw_value > 0">
+                        <div class="o_project_progress_bar">
+                            <t t-set="progress_data" t-value="JSON.parse(record.task_progress_data.raw_value or '{}')"/>
+                            <t t-foreach="progress_data.get('segments', [])" t-as="segment">
+                                <div class="o_progress_segment" 
+                                     t-att-style="'width: ' + segment.percentage + '%; background-color: ' + segment.color + ';'"
+                                     t-att-title="segment.name + ': ' + segment.count + ' tasks (' + segment.percentage + '%)'">
+                                </div>
+                            </t>
+                        </div>
+                        <div class="o_project_progress_legend">
+                            <small class="text-muted">
+                                <t t-esc="record.total_tasks.raw_value"/> tasks
+                            </small>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
