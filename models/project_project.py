@@ -55,7 +55,7 @@ class ProjectProject(models.Model):
                             stage_counts[stage_id] = 0
                             stage_info[stage_id] = {
                                 'name': stage.name or 'Unnamed Stage',
-                                'color': self._get_stage_color(stage),
+                                'color': self._get_stage_color_by_name(stage.name),
                                 'fold': bool(stage.fold),
                                 'sequence': stage.sequence or 0
                             }
@@ -105,41 +105,24 @@ class ProjectProject(models.Model):
                     'total': 0
                 })
     
-    def _get_stage_color(self, stage):
-        """Get color for stage based on its properties"""
-        try:
-            # Use stage color if available
-            if hasattr(stage, 'color') and stage.color is not False:
-                # Convert Odoo color index to actual color
-                color_map = {
-                    0: '#FFFFFF', 1: '#FF0000', 2: '#FF8000', 3: '#FFFF00',
-                    4: '#80FF00', 5: '#00FF00', 6: '#00FF80', 7: '#00FFFF',
-                    8: '#0080FF', 9: '#0000FF', 10: '#8000FF', 11: '#FF00FF'
-                }
-                return color_map.get(stage.color, '#95a5a6')
+    def _get_stage_color_by_name(self, stage_name):
+        """Get color for stage based on its name matching the 5 categories"""
+        if not stage_name:
+            return '#95a5a6'  # Default gray
             
-            # Fallback: Map stage properties to colors
-            stage_name_lower = (stage.name or '').lower()
-            
-            if stage.fold:
-                # Folded stages (usually done/cancelled)
-                if any(keyword in stage_name_lower for keyword in ['done', 'complete', 'finish', 'close', 'resolved']):
-                    return '#2ecc71'  # Green for completed
-                elif any(keyword in stage_name_lower for keyword in ['cancel', 'reject', 'abort', 'fail']):
-                    return '#e74c3c'  # Red for cancelled
-                else:
-                    return '#95a5a6'  # Gray for other folded stages
-            else:
-                # Active stages - use progression colors based on sequence
-                sequence = stage.sequence or 0
-                if sequence <= 1:
-                    return '#3498db'  # Blue - new/to do
-                elif sequence <= 2:
-                    return '#f39c12'  # Orange - in progress  
-                elif sequence <= 3:
-                    return '#9b59b6'  # Purple - review/testing
-                else:
-                    return '#1abc9c'  # Teal - ready to deploy
-        except Exception as e:
-            _logger.warning("Error getting stage color for stage %s: %s", stage.id if stage else 'None', str(e))
-            return '#95a5a6'  # Default gray color
+        stage_name_lower = stage_name.lower()
+        
+        # Map the 5 specific stage categories to colors
+        if 'in progress' in stage_name_lower or 'progress' in stage_name_lower:
+            return '#95a5a6'  # Grey - In Progress
+        elif 'changes requested' in stage_name_lower or 'changes' in stage_name_lower or 'requested' in stage_name_lower:
+            return '#f39c12'  # Orange - Changes Requested  
+        elif 'approved' in stage_name_lower or 'approve' in stage_name_lower:
+            return '#2ecc71'  # Green - Approved
+        elif 'cancel' in stage_name_lower or 'cancelled' in stage_name_lower:
+            return '#e74c3c'  # Red - Cancelled
+        elif 'done' in stage_name_lower or 'complete' in stage_name_lower or 'finished' in stage_name_lower:
+            return '#27ae60'  # Dark Green - Done
+        else:
+            # Fallback: use sequence-based colors for other stages
+            return '#9b59b6'  # Purple - Other stages
