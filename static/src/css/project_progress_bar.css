@@ -4,11 +4,11 @@
 
 .o_project_progress_bar {
     display: flex;
-    height: 20px;
+    height: 24px;
     background-color: #ecf0f1;
-    border-radius: 6px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     border: 1px solid #bdc3c7;
 }
 
@@ -17,7 +17,7 @@
     transition: all 0.3s ease;
     cursor: pointer;
     border-right: 1px solid rgba(255,255,255,0.3);
-    min-width: 3px; /* Ensure very small segments are still visible */
+    min-width: 4px;
     position: relative;
 }
 
@@ -44,7 +44,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .o_project_progress_bar {
-        height: 16px;
+        height: 20px;
     }
     
     .o_project_progress_legend {
@@ -53,15 +53,5 @@
     
     .o_project_progress_legend small {
         font-size: 11px;
-    }
-}
-
-/* Animation for progress bar loading */
-@keyframes progressLoad {
-    0% {
-        width: 0%;
-    }
-    100% {
-        width: var(--segment-width);
     }
 }
