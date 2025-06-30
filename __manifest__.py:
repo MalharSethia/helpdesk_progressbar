@@ -1,5 +1,5 @@
 {
-    'name': 'Project Progress Bar',
+    'name': 'project_progress_bar',
     'version': '17.0.1.0.0',
     'category': 'Project',
     'summary': 'Visual progress bar for project kanban view showing task completion status',
